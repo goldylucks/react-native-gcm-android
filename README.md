@@ -122,61 +122,49 @@ By following [Cloud messaging](https://developers.google.com/cloud-messaging/and
 ```javascript
 'use strict';
 
-var React = require('react-native');
-var {
-  AppRegistry,
-  View,
-  DeviceEventEmitter,
-} = React;
-
-var GcmAndroid = require('react-native-gcm-android');
+import React, { Component } from 'react';
+import { AppRegistry, View, DeviceEventEmitter } from 'react-native';
+import GcmAndroid from 'react-native-gcm-android';
 import Notification from 'react-native-system-notification';
+import { Router, Route, Schema, Animations, TabBar } from 'react-native-router-flux';
 
 if (GcmAndroid.launchNotification) {
-  var notification = GcmAndroid.launchNotification;
-  var info = JSON.parse(notification.info);
-  Notification.create({
-    subject: info.subject,
-    message: info.message,
-  });
+  const { subject, message } = JSON.parse(GcmAndroid.launchNotification.info);
+  Notification.create({ subject, message });
   GcmAndroid.stopService();
 } else {
-
-  var {Router, Route, Schema, Animations, TabBar} = require('react-native-router-flux');
-  var YourApp = React.createClass({
-    componentDidMount: function() {
-      GcmAndroid.addEventListener('register', function(token){
-        console.log('send gcm token to server', token);
-      });
-      GcmAndroid.addEventListener('registerError', function(error){
-        console.log('registerError', error.message);
-      });
-      GcmAndroid.addEventListener('notification', function(notification){
-        console.log('receive gcm notification', notification);
-        var info = JSON.parse(notification.data.info);
-        if (!GcmAndroid.isInForeground) {
-          Notification.create({
-            subject: info.subject,
-            message: info.message,
-          });
-        }
-      });
-
-      DeviceEventEmitter.addListener('sysNotificationClick', function(e) {
-        console.log('sysNotificationClick', e);
-      });
-
-      GcmAndroid.requestPermissions();
-    },
-    render: function() {
-      return (
-        ...
-      );
-    }
-  });
-
   AppRegistry.registerComponent('YourApp', () => YourApp);
 }
+
+class YourApp extends Component {
+  componentDidMount () {
+    GcmAndroid.addEventListener('register', token => {
+      console.log('send gcm token to server', token);
+    });
+    GcmAndroid.addEventListener('registerError', error => {
+      console.log('registerError', error.message);
+    });
+    GcmAndroid.addEventListener('notification', notification => {
+      console.log('receive gcm notification', notification);
+      if (GcmAndroid.isInForeground) {
+        return;
+      }
+      const { subject, message } = JSON.parse(notification.data.info);
+      Notification.create({ subject, message });
+    });
+
+    DeviceEventEmitter.addListener('sysNotificationClick', function(e) {
+      console.log('sysNotificationClick', e);
+    });
+
+    GcmAndroid.requestPermissions();
+  },
+  render() {
+    return (
+      ...
+    );
+  }
+};
 ```
 
 * There are two situations.
